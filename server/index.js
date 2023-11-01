@@ -59,6 +59,69 @@ app.post('/registration', (req, res)=>{
     });
 });
 
+app.post('/getpersoninfo', (req,res)=>{
+    const {role, password, login} = req.body;
+    if(role === "CLIENT") {
+        db.query("select user.login, user.password, user.iv, client.id, client.name, client.surname, client.patronymic, client.email, client.phone from client join user on client.id_user = user.id", (err, result)=>{
+            if(err){
+                res.send({status: "error", error: err});
+            } else{
+                let info =  result.filter(elem=>decrypt({password: elem.password, iv: elem.iv}) === password && elem.login === login);
+                if(info.length !== 0){
+                    info[0].password = decrypt({password: info[0].password, iv: info[0].iv})
+                    res.send({status: "success", info: info[0]})
+                } else{
+                    res.send({status: "error"})
+                }
+            }
+        })
+    } else{
+        db.query("select user.login, user.password, user.iv, manager.id, manager.name, manager.surname, manager.phone from manager join user on manager.id_user = user.id", (err, result)=>{
+            if(err){
+                res.send({status: "error", error: err});
+            } else{
+                let info =  result.filter(elem=>decrypt({password: elem.password, iv: elem.iv}) === password && elem.login === login);
+                if(info.length !== 0){
+                    info[0].password = decrypt({password: info[0].password, iv: info[0].iv})
+                    res.send({status: "success", info: info[0]})
+                } else{
+                    res.send({status: "error"})
+                }
+            }
+        })
+    }
+})
+
+app.post('/updatepersoninfo', (req, res)=>{
+    const {id, role, password, login, name, surname, patronymic, phone, email} = req.body;
+    const hachedPassword = encrypt(password);
+    if(role === "CLIENT") {
+        db.query("call updateClient(?,?,?,?,?,?,?,?,?)", [id, login, hachedPassword.password, name, surname, patronymic, phone, email, hachedPassword.iv], (err, result)=>{
+            if(err){
+                if(err.code === "ER_DUP_ENTRY") {
+                    res.send({status: "duplicate"});
+                } else{
+                    res.send({status: "error", error: err});
+                }
+            } else{
+                res.send({status: "success"});
+            }
+        })
+    } else{
+        db.query("call updateManager(?,?,?,?,?,?,?)", [id, login, hachedPassword.password, name, surname, phone, hachedPassword.iv], (err, result)=>{
+            if(err){
+                if(err.code === "ER_DUP_ENTRY") {
+                    res.send({status: "duplicate"});
+                } else{
+                    res.send({status: "error", error: err});
+                }
+            } else{
+                res.send({status: "success"});
+            }
+        })
+    }
+})
+
 app.post('/addmanager', (req, res)=>{
     const {password, login, name, surname, phone} = req.body;
     const hachedPassword = encrypt(password);
@@ -77,7 +140,6 @@ app.post('/addmanager', (req, res)=>{
 
 app.get('/getmanagers', (req,res)=>{
     db.query("select * from manager", (err, result)=>{
-        console.log(result);
         if(err){
             res.send({status: "error", error: err});
         } else{

@@ -17,3 +17,40 @@ BEGIN
 end;
 
 drop procedure addManager;
+
+DELIMITER $$
+CREATE PROCEDURE updateClient(in id int, in login varchar(45), in password varchar(255), in name varchar(50), in surname varchar(50), in patronymic varchar(50), in phone varchar(20), in email varchar(50), in iv varchar(255))
+BEGIN
+	declare id_user int;
+    set id_user = (select client.id_user from client where client.id = id);
+    update user set user.login = login,
+						user.password = password,
+                        user.iv = iv
+						where user.id = id_user;
+	update client set client.name = name,
+					client.surname = surname, 
+                    client.patronymic = patronymic,
+                    client.phone = phone,
+                    client.email = email where client.id = id;
+end;
+
+drop procedure updateClient;
+
+DELIMITER $$
+CREATE PROCEDURE updateManager(in id int, in login varchar(45), in password varchar(255), in name varchar(50), in surname varchar(50), in phone varchar(20), in iv varchar(255))
+BEGIN
+	declare id_user int;
+    set id_user = (select manager.id_user from manager where client.id = id);
+    update user set user.login = login,
+						user.password = password,
+                        user.iv = iv
+						where user.id = id_user;
+	update manager set client.name = name,
+					client.surname = surname, 
+                    client.phone = phone where client.id = id;
+end;
+
+drop procedure updateManager;
+
+
+
