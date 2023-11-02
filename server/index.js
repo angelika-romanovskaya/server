@@ -75,8 +75,22 @@ app.post('/getpersoninfo', (req,res)=>{
                 }
             }
         })
-    } else{
+    } else if(role === "MANAGER"){
         db.query("select user.login, user.password, user.iv, manager.id, manager.name, manager.surname, manager.phone from manager join user on manager.id_user = user.id", (err, result)=>{
+            if(err){
+                res.send({status: "error", error: err});
+            } else{
+                let info =  result.filter(elem=>decrypt({password: elem.password, iv: elem.iv}) === password && elem.login === login);
+                if(info.length !== 0){
+                    info[0].password = decrypt({password: info[0].password, iv: info[0].iv})
+                    res.send({status: "success", info: info[0]})
+                } else{
+                    res.send({status: "error"})
+                }
+            }
+        })
+    } else {
+        db.query("select user.login, user.password, user.iv, user.id from user", (err, result)=>{
             if(err){
                 res.send({status: "error", error: err});
             } else{
@@ -107,8 +121,20 @@ app.post('/updatepersoninfo', (req, res)=>{
                 res.send({status: "success"});
             }
         })
-    } else{
+    } else if(role === "MANAGER"){
         db.query("call updateManager(?,?,?,?,?,?,?)", [id, login, hachedPassword.password, name, surname, phone, hachedPassword.iv], (err, result)=>{
+            if(err){
+                if(err.code === "ER_DUP_ENTRY") {
+                    res.send({status: "duplicate"});
+                } else{
+                    res.send({status: "error", error: err});
+                }
+            } else{
+                res.send({status: "success"});
+            }
+        })
+    } else{
+        db.query("call updateAdmin(?,?,?,?)", [id, login, hachedPassword.password, hachedPassword.iv], (err, result)=>{
             if(err){
                 if(err.code === "ER_DUP_ENTRY") {
                     res.send({status: "duplicate"});

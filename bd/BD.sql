@@ -52,5 +52,16 @@ end;
 
 drop procedure updateManager;
 
+DELIMITER $$
+CREATE PROCEDURE updateAdmin(in id int, in login varchar(45), in password varchar(255), in iv varchar(255))
+BEGIN
+    update user set user.login = login,
+						user.password = password,
+                        user.iv = iv
+						where user.id = id;
+end;
+
+drop procedure updateAdmin;
+
 
 
