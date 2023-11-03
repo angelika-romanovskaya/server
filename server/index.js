@@ -33,11 +33,21 @@ app.post('/login', (req, res)=>{
                     if(err){
                         res.send({status: "error", error: err});
                     } else{
-                        res.send({status: "success", role: result[0].role})
+                        if(result[0].role === "CLIENT"){
+                            db.query("select status from client where client.id_user = ?", [user[0].id], (err, results)=>{
+                                if(err){
+                                    res.send({status: "error", error: err});
+                                } else{
+                                    res.send({status: "success", role: result[0].role, client_status: results[0].status})
+                                }
+                            })
+                        } else{
+                            res.send({status: "success", role: result[0].role})
+                        }
                     }
                 });
             } else{
-                    res.send({status: "not found"})
+                res.send({status: "not found"})
             }
         }
     });
@@ -177,6 +187,38 @@ app.get('/getmanagers', (req,res)=>{
 app.post('/deleteManager', (req,res)=>{
     const {id} = req.body;
     db.query("delete user from user join manager on user.id = manager.id_user where manager.id = ?", [id], (err, result)=>{
+        if(err){
+            res.send({status: "error", error: err});
+        } else{
+            res.send({status: "success"})
+        }
+    })
+})
+
+app.get('/getclients', (req,res)=>{
+    db.query("select client.id, client.name, client.surname, client.patronymic, client.email, client.phone, client.status, user.login from client join user where client.id_user = user.id", (err, result)=>{
+        if(err){
+            res.send({status: "error", error: err});
+        } else{
+            res.send({status: "success", clients: result})
+        }
+    })
+});
+
+app.post('/blockedClient', (req,res)=>{
+    const {id} = req.body;
+    db.query("update client set client.status = 'blocked' where client.id = ?", [id], (err, result)=>{
+        if(err){
+            res.send({status: "error", error: err});
+        } else{
+            res.send({status: "success"})
+        }
+    })
+})
+
+app.post("/deleteClient", (req, res)=>{
+    const {id} = req.body;
+    db.query("update client set client.status = 'deleted' where client.id = ?", [id], (err, result)=>{
         if(err){
             res.send({status: "error", error: err});
         } else{
