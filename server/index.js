@@ -227,6 +227,28 @@ app.post("/deleteClient", (req, res)=>{
     })
 })
 
+app.post("/restoreClient", (req, res)=>{
+    const {password, login} = req.body;
+    db.query("select * from user", (err, result)=>{
+        if(err) {
+            res.send({status: "error", error: err});
+        } else{
+            let user =  result.filter(elem=>decrypt({password: elem.password, iv: elem.iv}) === password && elem.login === login);
+            if(user.length !== 0){
+                db.query("update client set client.status = 'active' where client.id_user = ?", [user[0].id], (err, result)=>{
+                    if(err){
+                        res.send({status: "error", error: err});
+                    } else{
+                        res.send({status: "success", role: "CLIENT"})
+                    }
+                });
+            } else{
+                res.send({status: "not found"})
+            }
+        }
+    });
+})
+
 app.listen(PORT, ()=>{
     console.log("Server is running");
 });
