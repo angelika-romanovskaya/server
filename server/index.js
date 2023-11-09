@@ -5,6 +5,7 @@ const cors = require('cors')
 const bp = require('body-parser');
 
 const {encrypt, decrypt} = require('./Encryption')
+const {dataURLtoBlob, blobToDataURL} = require('./Blob')
 
 const PORT = 9090
 app.use(cors())
@@ -86,7 +87,7 @@ app.post('/getpersoninfo', (req,res)=>{
             }
         })
     } else if(role === "MANAGER"){
-        db.query("select user.login, user.password, user.iv, manager.id, manager.name, manager.surname, manager.phone from manager join user on manager.id_user = user.id", (err, result)=>{
+        db.query("select user.login, user.password, user.iv, user.signature, manager.id, manager.name, manager.surname, manager.phone from manager join user on manager.id_user = user.id", (err, result)=>{
             if(err){
                 res.send({status: "error", error: err});
             } else{
@@ -100,13 +101,19 @@ app.post('/getpersoninfo', (req,res)=>{
             }
         })
     } else {
-        db.query("select user.login, user.password, user.iv, user.id from user", (err, result)=>{
+        db.query("select user.login, user.password, user.signature, user.iv, user.id from user", (err, result)=>{
             if(err){
                 res.send({status: "error", error: err});
             } else{
                 let info =  result.filter(elem=>decrypt({password: elem.password, iv: elem.iv}) === password && elem.login === login);
                 if(info.length !== 0){
+                    console.log(info[0])
+                    if(info[0].signature){
+                        let url = Buffer.from(info[0].signature, 'base64').toString('ascii');
+                        info[0].signature = url;
+                    }
                     info[0].password = decrypt({password: info[0].password, iv: info[0].iv})
+                    console.log(info[0])
                     res.send({status: "success", info: info[0]})
                 } else{
                     res.send({status: "error"})
@@ -248,6 +255,60 @@ app.post("/restoreClient", (req, res)=>{
         }
     });
 })
+
+app.post("/saveSignature", (req, res)=>{
+    const {id, signature} = req.body;
+    console.log(signature)
+    db.query("update user set user.signature = ? where user.id = ?", [signature, id], (err, result)=>{
+        if(err){
+            console.log(err)
+            res.send({status: "error", error: err});
+        } else{
+            res.send({status: "success"});
+        }
+    })
+})
+
+app.post("/addBell", (req, res)=>{
+    const {password, login, theme, phone} = req.body;
+    if(password === '' && login === ''){
+        db.query("insert into calls(theme, phone) value(?,?)", [theme, phone], (err, result)=>{
+            if(err){
+                res.send({status: "error", error: err});
+            } else{
+                res.send({status: "success"});
+            }
+        })
+    } else{
+        db.query("select * from user", (err, result)=>{
+            if(err) {
+                res.send({status: "error", error: err});
+            } else{
+                let user =  result.filter(elem=>decrypt({password: elem.password, iv: elem.iv}) === password && elem.login === login);
+                if(user.length !== 0){
+                    db.query("insert into calls(id_client, theme) value((select id from client where id_user = ?),?)", [user[0].id, theme], (err, result)=>{
+                        if(err){
+                            res.send({status: "error", error: err});
+                        } else{
+                            res.send({status: "success"});
+                        }
+                    })
+                }
+            }
+        })
+    }
+})
+
+app.get('/getbell', (req,res)=>{
+    db.query("select theme, 'anonymous' as name, phone as phone from calls where id_client is null union select calls.theme, concat(client.name, ' ', client.surname) as name, client.phone as phone from calls join client on calls.id_client = client.id where calls.id_client is not null", (err, result)=>{
+        if(err){
+            res.send({status: "error", error: err});
+        } else{
+            res.send({status: "success", calls: result})
+        }
+    })
+});
+
 
 app.listen(PORT, ()=>{
     console.log("Server is running");
