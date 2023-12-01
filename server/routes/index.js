@@ -1,7 +1,25 @@
 const Router = require('express')
 const router = new Router();
 const userRouter = require('./userRouters')
+const roleRouter = require('./roleRouters')
+const statusRouter = require('./statusRouters')
+const personRouter = require('./personRouters')
+const managerRouter = require('./managerRouters')
+const clientRouter = require('./clientRouters')
+const bellRouter = require('./bellRouters')
+const bidRouter = require('./bidRouters')
+const documentRouter = require('./documentRouters')
+const staticticRouter = require('./staticticRouters')
 
 router.use('/user',userRouter)
+router.use('/role',roleRouter)
+router.use('/status',statusRouter)
+router.use('/person',personRouter)
+router.use('/manager',managerRouter)
+router.use('/client',clientRouter)
+router.use('/bell',bellRouter)
+router.use('/bid',bidRouter)
+router.use('/document', documentRouter)
+router.use('/statistic', staticticRouter)
 
 module.exports = router
