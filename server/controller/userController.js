@@ -27,9 +27,9 @@ class UserController{
                 let role = await db.query("select roles.role from roles where roles.id = ?",{ replacements: [user[0].roleId], type: QueryTypes.SELECT});
                 if(role[0].role === "CLIENT"){
                     let status = await db.query("select status from clients where clients.userId = ?", {replacements:[user[0].id], type: QueryTypes.SELECT})
-                    res.send({status: "success", role: role[0], client_status: status[0].status, id: user[0].id})
+                    res.send({status: "success", role: role[0].role, client_status: status[0].status, id: user[0].id})
                 } else{
-                    res.send({status: "success", role: role[0], id: user[0].id})
+                    res.send({status: "success", role: role[0].role, id: user[0].id})
                 }
             } else{
                 res.send({status: "not found"})

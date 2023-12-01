@@ -7,21 +7,21 @@ class BidController{
     async add(req, res){
         try {
             const {id, type, description, typeUser, dataStart} = req.body;
-            console.log(typeUser)
             let id_manager;
-            let count = await db.query("select users.id as id_manager, COUNT(*) as 'количество заявок в обработке' from users left outer join bids on users.id = bids.managerId where users.roleId = 2 group by users.id order by COUNT(*)", {type: QueryTypes.SELECT})
+            let count = await db.query("select managers.id as id_manager, COUNT(*) as 'количество заявок в обработке' from managers left outer join bids on managers.id = bids.managerId join users on managers.userId = users.id where users.roleId = 2 group by users.id order by COUNT(*) ", {type: QueryTypes.SELECT})
             if(count.length !== 0){
                 id_manager = count[0].id_manager;
             }
-            let users = await User.findAll({id:id, roleId:2})
+            let users = await User.findAll({id:id})
             let user =  users.filter(elem => elem.id === id);
             let manager = users.filter(elem=>elem.roleId === 2);
-            if(id_manager === undefined){
+            if(id_manager == undefined){
                 id_manager = manager[0].id;
             }
             await db.query('call addBid(?,?,?,?,?,?)', {replacements: [user[0].id, type, description, id_manager, typeUser, dataStart], type : QueryTypes.INSERT})
             res.send({status: "success"})
         } catch (error) {
+            console.log(error)
             res.send({status: "error", error: error});
         }
     }
@@ -29,10 +29,10 @@ class BidController{
     async get(req, res){
         try {
             const {id, role} = req.body;
-            if(role.role === "CLIENT"){
+            if(role === "CLIENT"){
                 let bid = await db.query("select DATE_FORMAT(bids.data_start, '%Y-%m-%d') as data_start, DATE_FORMAT(bids.data_end, '%Y-%m-%d') as data_end, bids.id, bids.price, statuses.status, bids.msg, managers.name, managers.surname, bids.statusId, bids.type, bids.description, documents.id as document from bids join managers on bids.managerId = managers.id join statuses on statuses.id = bids.statusId join clients on clients.id = bids.clientId left join documents on bids.id = documents.bidId where clients.userId = ?", {replacements: [id], type:QueryTypes.SELECT})
                 res.send({status: "success", bid: bid})
-            } else if(role.role === "MANAGER"){
+            } else if(role === "MANAGER"){
                 let bid = await db.query("select DATE_FORMAT(bids.data_start, '%Y-%m-%d') as data_start, DATE_FORMAT(bids.data_end, '%Y-%m-%d') as data_end, bids.price, bids.type_user, bids.id, documents.id as document, statuses.status, clients.name, clients.surname, clients.phone, clients.email, bids.statusId, bids.type, bids.description from bids join clients on bids.clientId = clients.id join statuses on statuses.id = bids.statusId join managers on bids.managerId = managers.id left join documents on bids.id = documents.bidId join users on managers.userId = users.id where managers.userId = ? and not bids.statusId = 13", {replacements: [id], type:QueryTypes.SELECT})
                 res.send({status: "success", bid: bid})
             } else{
@@ -68,7 +68,7 @@ class BidController{
     async approve(req, res){
         try {
             const {id, msg, role, data_end, price} = req.body;
-            if(role.role === "MANAGER"){
+            if(role === "MANAGER"){
                 await Bid.update({price: price, msg:msg, data_end:data_end, statusId:12}, {where : {id:id}})
                 res.send({status: "success"})
             } else{

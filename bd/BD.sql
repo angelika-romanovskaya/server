@@ -24,10 +24,9 @@ drop procedure addManager;
 DELIMITER $$
 CREATE PROCEDURE addBid(in id_user int, in type varchar(255), in description varchar(255), in id_manager int, in type_user varchar(255), in data_start date)
 BEGIN
-	declare id_client, id_m int;
+	declare id_client int;
     set id_client = (select clients.id from clients where clients.userId = id_user);
-    set id_m = (select managers.id from managers where managers.userId = id_manager);
-    insert into bids(clientId, type, description, managerId, statusId, type_user, data_start) value(id_client, type, description, id_m, 1, type_user, data_start);
+    insert into bids(clientId, type, description, managerId, statusId, type_user, data_start) value(id_client, type, description, id_manager, 10, type_user, data_start);
 end;
 
 drop procedure addBid;

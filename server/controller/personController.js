@@ -6,11 +6,11 @@ class PersonController{
     async getInfo(req,res){
         try {
             const {role, id} = req.body;
-            if(role.role === "CLIENT") {
+            if(role === "CLIENT") {
                 let result = await db.query("select users.id as idUser, users.login, users.password, users.iv, clients.id, clients.name, clients.surname, clients.patronymic, clients.email, clients.phone from clients join users on clients.userId = users.id where users.id = ?", {replacements: [id], type:QueryTypes.SELECT})
                 result[0].password = decrypt({password: result[0].password, iv: result[0].iv})
                 res.send({status: "success", info: result[0]})
-            } else if(role.role === "MANAGER"){
+            } else if(role === "MANAGER"){
                 let result = await db.query("select users.id as idUser, users.login, users.password, users.iv, managers.id, managers.name, managers.surname, managers.phone from managers join users on managers.userId = users.id where users.id = ?", {replacements: [id], type:QueryTypes.SELECT})
                 result[0].password = decrypt({password: result[0].password, iv: result[0].iv})
                 res.send({status: "success", info: result[0]})
@@ -28,10 +28,10 @@ class PersonController{
         try {
             const {id, role, password, login, name, surname, patronymic, phone, email} = req.body;
             const hachedPassword = encrypt(password);
-            if(role.role === "CLIENT") {
+            if(role === "CLIENT") {
                 await db.query("call updateClient(?,?,?,?,?,?,?,?,?)", {replacements:[id, login, hachedPassword.password, name, surname, patronymic, phone, email, hachedPassword.iv],  type:QueryTypes.UPDATE})
                 res.send({status: "success"});
-            } else if(role.role === "MANAGER"){
+            } else if(role === "MANAGER"){
                 await db.query("call updateManager(?,?,?,?,?,?,?)", {replacements: [id, login, hachedPassword.password, name, surname, phone, hachedPassword.iv], type:QueryTypes.UPDATE})
                 res.send({status: "success"});
             } else{
