@@ -38,6 +38,20 @@ class StatisticController{
             res.send({status: "error", error: error});
         }
     }
+
+    async getChartManagerClient(req, res){
+        try {
+            const {id} = req.body;
+            let manager = [];
+            let bid = [];
+            let result = await db.query("select count(*) as count, concat(managers.name, ' ', managers.surname) as manager, statuses.status from bids join managers on bids.managerId = managers.id join statuses on statuses.id = bids.statusId join clients on bids.clientId = clients.id join users on users.id = clients.userId where users.id = ? group by bids.managerId, bids.statusId", {replacements : [id], type: QueryTypes.SELECT})
+            console.log(result)
+            result.forEach(el => {manager.push(el.manager); bid.push(el)})
+            res.send({status: "success", manager: manager, bid: bid})
+        } catch (error) {
+            res.send({status: "error", error: error});
+        }
+    }
     
     async getChartClientAdmin(req, res){
         try {
